@@ -7,7 +7,7 @@ use Exception;
 
 class PerformanceMeasurement
 {
-    private float $startTime;
+    private string $startTime;
 
     public function start(): void
     {
@@ -17,15 +17,18 @@ class PerformanceMeasurement
         // Small delay for system stabilization
         usleep(1000);
 
-        $this->startTime = hrtime(true);
+        $this->startTime = (string)hrtime(true);
     }
 
     public function stop(): array
     {
-        $endTime = hrtime(true);
+        $endTime = (string)hrtime(true);
+
+        // Convert nanoseconds to seconds with bcmath (8 decimal places)
+        $duration = bcdiv(bcsub($endTime, $this->startTime, 0), '1000000000', 8);
 
         return [
-          'duration' => ($endTime - $this->startTime) / 1e9
+          'duration' => $duration
         ];
     }
 
@@ -44,7 +47,7 @@ class PerformanceMeasurement
         echo str_repeat('-', 60) . "\n";
 
         $allStats = [];
-        $totalDuration = 0;
+        $totalDuration = '0';
 
         for ($i = 1; $i <= $iterations; $i++) {
             // Pre-run cleanup
@@ -58,7 +61,7 @@ class PerformanceMeasurement
             $stats = $this->stop();
             $allStats[] = $stats;
 
-            $totalDuration += $stats['duration'];
+            $totalDuration = bcadd($totalDuration, $stats['duration'], 8);
 
             if ($showDetails) {
                 echo "Run $i: " . $this->formatDuration($stats['duration']) . "\n";
@@ -69,12 +72,28 @@ class PerformanceMeasurement
             gc_collect_cycles();
         }
 
-        // Calculate averages
+        // Calculate statistics with bcmath
+        $durations = array_column($allStats, 'duration');
+        $avgDuration = bcdiv($totalDuration, (string)$iterations, 8);
+
+        // Find min and max using bccomp
+        $minDuration = $durations[0];
+        $maxDuration = $durations[0];
+
+        foreach ($durations as $duration) {
+            if (bccomp($duration, $minDuration, 8) < 0) {
+                $minDuration = $duration;
+            }
+            if (bccomp($duration, $maxDuration, 8) > 0) {
+                $maxDuration = $duration;
+            }
+        }
+
         $avgStats = [
           'iterations' => $iterations,
-          'avg_duration' => $totalDuration / $iterations,
-          'min_duration' => min(array_column($allStats, 'duration')),
-          'max_duration' => max(array_column($allStats, 'duration')),
+          'avg_duration' => $avgDuration,
+          'min_duration' => $minDuration,
+          'max_duration' => $maxDuration,
           'total_duration' => $totalDuration,
           'all_runs' => $allStats
         ];
@@ -91,14 +110,17 @@ class PerformanceMeasurement
         return $avgStats;
     }
 
-    public function formatDuration(float $seconds): string
+    public function formatDuration(string $seconds): string
     {
-        if ($seconds < 0.001) {
-            return number_format($seconds * 1000000, 2) . ' µs (microseconds)';
-        } elseif ($seconds < 1) {
-            return number_format($seconds * 1000, 3) . ' ms (milliseconds)';
-        }
-        return number_format($seconds, 6) . ' s (seconds)';
-    }
+        // Convert to microseconds for comparison
+        $microseconds = bcmul($seconds, '1000000', 8);
+        $milliseconds = bcmul($seconds, '1000', 8);
 
+        if (bccomp($seconds, '0.001', 8) < 0) {
+            return bcadd($microseconds, '0', 2) . ' µs (microseconds)';
+        } elseif (bccomp($seconds, '1', 8) < 0) {
+            return bcadd($milliseconds, '0', 3) . ' ms (milliseconds)';
+        }
+        return bcadd($seconds, '0', 8) . ' s (seconds)';
+    }
 }
