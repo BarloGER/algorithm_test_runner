@@ -7,6 +7,9 @@ use src\utilities\CustomFormatter;
 use src\interfaces\ProblemInterface;
 use src\utilities\PerformanceMeasurement;
 
+use function bcdiv;
+use function bcmul;
+
 class SumProblem implements ProblemInterface
 {
     private ?string $n = null;
@@ -60,6 +63,22 @@ class SumProblem implements ProblemInterface
         $this->n = null;
     }
 
+    /**
+     * Calculate the sum from 1 to n iterative
+     *
+     * Pseudocode
+     *
+     * ```
+     * Algo(n)
+     * s ← 0
+     * for i ← 1, ..., n
+     *   s ← s + i
+     * return s
+     * ```
+     *
+     * @return void
+     * @api
+     */
     public function iterativeSum(): void
     {
         if (!$this->isReady()) {
@@ -67,7 +86,7 @@ class SumProblem implements ProblemInterface
             return;
         }
 
-        if (bccomp($this->n, '10000000000', 0) > 0) {
+        if ($this->n > 10000000000) {
             echo "⚠ WARNING: n too large for iterative solution!\n";
             return;
         }
@@ -77,14 +96,12 @@ class SumProblem implements ProblemInterface
         $timer = new PerformanceMeasurement();
         $timer->start();
 
-        $sum = '0';
-        $counter = '0';
-        $i = '1';
+        $sum = 0;
+        $counter = 0;
 
-        while (bccomp($i, $this->n, 0) <= 0) {
-            $sum = bcadd($sum, $i, 8);
-            $counter = bcadd($counter, '1', 0);
-            $i = bcadd($i, '1', 0);
+        for ($i = 1; $i <= $this->n; $i++) {
+            $sum += $i;
+            $counter += 1;
         }
 
         $stats = $timer->stop();
@@ -95,6 +112,22 @@ class SumProblem implements ProblemInterface
         echo "Time: " . $timer->formatDuration($stats['duration']) . "\n";
     }
 
+    /**
+     * Calculates the sum of 1 to n using gaussian sum formula
+     *
+     * Pseudocode
+     *
+     * ```
+     * Algo(n)
+     *     n × (n + 1)
+     * s ← ───────────
+     *         2
+     * returns s
+     * ```
+     *
+     * @return void
+     * @api
+     */
     public function gaussianSumFormula(): void
     {
         if (!$this->isReady()) {
@@ -107,10 +140,7 @@ class SumProblem implements ProblemInterface
         $timer = new PerformanceMeasurement();
         $timer->start();
 
-        // Formula: n * (n + 1) / 2 with bcmath precision
-        $nPlusOne = bcadd($this->n, '1', 8);
-        $product = bcmul($this->n, $nPlusOne, 8);
-        $sum = bcdiv($product, '2', 8);
+        $sum = bcdiv(bcmul($this->n, bcadd($this->n, '1', 8), 8), '2', 8);
 
         $stats = $timer->stop();
 
