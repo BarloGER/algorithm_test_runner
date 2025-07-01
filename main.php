@@ -14,6 +14,138 @@ class AlgorithmTestRunner
     {
         $this->performance = new PerformanceMeasurement();
         $this->loadAvailableProblems();
+        $this->setupMemoryAndLimits();
+    }
+
+    private function setupMemoryAndLimits(): void
+    {
+        // Check the current memory limit
+        $currentLimit = ini_get('memory_limit');
+        $currentBytes = self::parseMemoryLimit($currentLimit);
+
+        echo "🚀 Algorithm Runner\n";
+        echo "📊 Current memory limit: $currentLimit\n";
+
+        // Check if the limit is too small
+        if ($currentBytes < 512 * 1024 * 1024) { // < 512MB
+            echo "\n⚠️  LOW MEMORY WARNING ⚠️\n";
+            echo "💡 For large algorithms, i recommend at least 512MB\n";
+            echo "🔧 Would you like to increase the memory limit?\n\n";
+            echo "Available options:\n";
+            echo "1. 512M (recommended for most algorithms)\n";
+            echo "2. 1G (for large datasets)\n";
+            echo "3. 2G (for very large datasets)\n";
+            echo "4. 4G (for extreme testing)\n";
+            echo "5. Keep current ($currentLimit)\n";
+            echo "Choice (1-5): ";
+
+            $choice = trim(fgets(STDIN));
+
+            switch($choice) {
+                case '1':
+                    ini_set('memory_limit', '512M');
+                    echo "✅ Memory limit set to 512M\n";
+                    break;
+                case '2':
+                    ini_set('memory_limit', '1G');
+                    echo "✅ Memory limit set to 1G\n";
+                    break;
+                case '3':
+                    ini_set('memory_limit', '2G');
+                    echo "✅ Memory limit set to 2G\n";
+                    break;
+                case '4':
+                    ini_set('memory_limit', '4G');
+                    echo "✅ Memory limit set to 4G\n";
+                    break;
+                default:
+                    echo "✅ Keeping current limit ($currentLimit)\n";
+                    break;
+            }
+        } else {
+            //
+            ini_set('memory_limit', '1G');
+            echo "✅ Memory limit optimized to 1G\n";
+        }
+
+        // Execution time for complex algorithms
+        ini_set('max_execution_time', 300);
+
+        // Error reporting for development
+        error_reporting(E_ALL);
+        ini_set('display_errors', 1);
+
+        echo "⏱️ Execution time: " . ini_get('max_execution_time') . "s\n";
+        echo "📊 Final memory limit: " . ini_get('memory_limit') . "\n\n";
+    }
+
+    /**
+     * Get memory info for warnings
+     */
+    public static function getMemoryInfo(): array
+    {
+        $memoryLimit = self::parseMemoryLimit(ini_get('memory_limit'));
+        $memoryUsage = memory_get_usage(true);
+
+        return [
+          'limit' => $memoryLimit,
+          'usage' => $memoryUsage,
+          'available' => $memoryLimit - $memoryUsage,
+          'limit_formatted' => self::formatBytes($memoryLimit),
+          'usage_formatted' => self::formatBytes($memoryUsage),
+          'available_formatted' => self::formatBytes($memoryLimit - $memoryUsage)
+        ];
+    }
+
+    /**
+     * Parse memory limit string to bytes
+     */
+    public static function parseMemoryLimit(string $memoryLimit): int
+    {
+        $memoryLimit = trim($memoryLimit);
+        $last = strtolower($memoryLimit[strlen($memoryLimit)-1]);
+        $value = (int) $memoryLimit;
+
+        switch($last) {
+            case 'g':                           // 1G → 1.073.741.824 ✓
+            case 'm':                           // 1M → 1.048.576 ✓
+            case 'k': $value *= (1024); break;  // 1K → 1.024 ✓
+        }
+
+        return $value;
+    }
+
+    /**
+     * Format bytes to human-readable format
+     */
+    public static function formatBytes(int $bytes): string
+    {
+        if ($bytes >= 1073741824) {
+            return round($bytes / 1073741824, 2) . ' GB';
+        } elseif ($bytes >= 1048576) {
+            return round($bytes / 1048576, 2) . ' MB';
+        } elseif ($bytes >= 1024) {
+            return round($bytes / 1024, 2) . ' KB';
+        }
+
+        return $bytes . ' bytes';
+    }
+
+    /**
+     * Check if the array size would fit in memory
+     */
+    public static function checkMemoryForArray(int $size): array
+    {
+        $memoryInfo = self::getMemoryInfo();
+        $estimatedMemory = $size * 24; // ~24 bytes per PHP array element (overhead)
+
+        return [
+          'size' => $size,
+          'estimated_memory' => $estimatedMemory,
+          'estimated_formatted' => self::formatBytes($estimatedMemory),
+          'fits' => $estimatedMemory < $memoryInfo['available'] * 0.8, // 80% safety margin
+          'memory_info' => $memoryInfo
+        ];
     }
 
     private function loadAvailableProblems(): void

@@ -2,6 +2,11 @@
 
 namespace src\utilities;
 
+use function array_slice;
+use function count;
+use function implode;
+use function intval;
+
 class CustomFormatter {
     public function formatLargeNumber($number): string
     {
@@ -27,5 +32,21 @@ class CustomFormatter {
         }
 
         return number_format($number);
+    }
+
+    /**
+     * Format list for display (with smart truncation for large lists)
+     */
+    public function formatList(array $list, int $maxElements = 10): string
+    {
+        if (count($list) <= $maxElements) {
+            return '[' . implode(', ', $list) . ']';
+        }
+
+        $half = intval($maxElements / 2);
+        $start = array_slice($list, 0, $half);
+        $end = array_slice($list, -$half);
+
+        return '[' . implode(', ', $start) . ', ... (' . (count($list) - $maxElements) . ' more), ' . implode(', ', $end) . ']';
     }
 }

@@ -6,6 +6,7 @@ namespace src;
 
 use InvalidArgumentException;
 use ReflectionClass;
+use src\calculation_problems\FindLightestConstructionWorker;
 use src\calculation_problems\GreatestCommonDivisor;
 use src\calculation_problems\ProductOfTwoNumbers;
 use src\calculation_problems\SumProblem;
@@ -22,7 +23,8 @@ class ProblemFactory
         return [
           SumProblem::class,
           GreatestCommonDivisor::class,
-          ProductOfTwoNumbers::class
+          ProductOfTwoNumbers::class,
+          FindLightestConstructionWorker::class
         ];
     }
 
