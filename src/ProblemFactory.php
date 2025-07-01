@@ -1,4 +1,5 @@
 <?php
+
 declare(strict_types = 1);
 
 namespace src;
@@ -6,6 +7,8 @@ namespace src;
 use InvalidArgumentException;
 use ReflectionClass;
 use ReflectionException;
+use src\calculation_problems\GreatestCommonDivisor;
+use src\calculation_problems\SumProblem;
 use src\interfaces\ProblemInterface;
 
 class ProblemFactory
@@ -18,6 +21,7 @@ class ProblemFactory
     {
         return [
           SumProblem::class,
+          GreatestCommonDivisor::class,
         ];
     }
 

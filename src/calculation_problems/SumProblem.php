@@ -1,18 +1,19 @@
 <?php
 declare(strict_types = 1);
 
-namespace src;
+namespace src\calculation_problems;
 
-use src\utilities\CustomFormatter;
 use src\interfaces\ProblemInterface;
+use src\utilities\CustomFormatter;
 use src\utilities\PerformanceMeasurement;
 
 use function bcdiv;
 use function bcmul;
+use function is_int;
 
 class SumProblem implements ProblemInterface
 {
-    private ?string $n = null;
+    private ?int $n = null;
 
     public function getProblemName(): string
     {
@@ -24,7 +25,7 @@ class SumProblem implements ProblemInterface
         if ($this->n === null) {
             return "Calculate the sum of all numbers from 1 to n (n not set yet)";
         }
-        return "Calculate the sum of all numbers from 1 to " . number_format((int)$this->n);
+        return "Calculate the sum of all numbers from 1 to " . number_format($this->n);
     }
 
     public function getAvailableMethods(): array
@@ -43,19 +44,31 @@ class SumProblem implements ProblemInterface
 
         echo "Enter the value for n: ";
         $input = trim(fgets(STDIN));
-        $n = $input;
+        $n = (int)$input;
 
         $this->n = $n;
         echo "✓ Parameters set: n = " . number_format((int)$this->n) . "\n";
 
-        if (bccomp($this->n, '100000000', 0) > 0) {
+        if ($this->n > 100000000) {
             echo "⚠ WARNING: Big Number!\n";
         }
     }
 
     public function isReady(): bool
     {
-        return $this->n !== null && bccomp($this->n, '0', 0) > 0;
+        if ($this->n === null) {
+            return false;
+        }
+
+        if (!is_int($this->n)) {
+            return false;
+        }
+
+        if ($this->n <= 0) {
+            return false;
+        }
+
+        return true;
     }
 
     public function reset(): void
@@ -91,7 +104,7 @@ class SumProblem implements ProblemInterface
             return;
         }
 
-        echo "Start iterative calculation for n = " . number_format((int)$this->n) . "...\n";
+        echo "Start iterative calculation for n = " . number_format($this->n) . " ...\n";
 
         $timer = new PerformanceMeasurement();
         $timer->start();
@@ -140,7 +153,7 @@ class SumProblem implements ProblemInterface
         $timer = new PerformanceMeasurement();
         $timer->start();
 
-        $sum = bcdiv(bcmul($this->n, bcadd($this->n, '1', 8), 8), '2', 8);
+        $sum = bcdiv(bcmul((string)$this->n, bcadd((string)$this->n, '1', 8), 8), '2', 8);
 
         $stats = $timer->stop();
 

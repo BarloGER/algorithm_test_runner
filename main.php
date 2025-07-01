@@ -41,11 +41,11 @@ class AlgorithmTestRunner
     public function run(): void
     {
         echo "Algorithm test runner started!\n";
-        echo "Found problems: " . count($this->problems) . "\n\n";
+        echo 'Found problems: ' . count($this->problems) . "\n\n";
 
         while (true) {
             $this->showMainMenu();
-            $choice = $this->getUserInput("Your choice: ");
+            $choice = $this->getUserInput('Your choice: ');
 
             if ($choice === 'q') {
                 echo "Goodbye!\n";
@@ -233,9 +233,9 @@ class AlgorithmTestRunner
         echo str_repeat('=', 70) . "\n";
 
         foreach ($results as $rank => $result) {
-            echo ($rank + 1) . ". " . $result['name'] . "\n";
-            echo "   " . $result['description'] . "\n";
-            echo "   Time: " . $this->performance->formatDuration($result['avg_duration']) . "\n\n";
+            echo ($rank + 1) . '. ' . $result['name'] . "\n";
+            echo '   ' . $result['description'] . "\n";
+            echo '   Time: ' . $this->performance->formatDuration($result['avg_duration']) . "\n\n";
         }
     }
 }
