@@ -1,18 +1,17 @@
 <?php
+
 declare(strict_types = 1);
 
 namespace src\calculation_problems;
 
-use src\interfaces\ProblemInterface;
-use src\utilities\CustomFormatter;
-use src\utilities\PerformanceMeasurement;
-
 use function bcdiv;
 use function bcmul;
-use function is_int;
 
-class SumProblem implements ProblemInterface
+class SumProblem extends AbstractCalculationProblem
 {
+    /**
+     * @var int|null
+     */
     private ?int $n = null;
 
     public function getProblemName(): string
@@ -32,43 +31,19 @@ class SumProblem implements ProblemInterface
     {
         return [
           'iterativeSum' => 'Simply add all numbers together',
-          'gaussianSumFormula' => 'Use the Gaussian Sum Formula'
+          'gaussianSumFormula' => 'Use the Gaussian Sum Formula',
         ];
     }
 
     public function setupParameters(): void
     {
-        echo "\n" . str_repeat('=', 50) . "\n";
-        echo "SETUP: " . $this->getProblemName() . "\n";
-        echo str_repeat('=', 50) . "\n";
-
-        echo "Enter the value for n: ";
-        $input = trim(fgets(STDIN));
-        $n = (int)$input;
-
-        $this->n = $n;
-        echo "✓ Parameters set: n = " . number_format((int)$this->n) . "\n";
-
-        if ($this->n > 100000000) {
-            echo "⚠ WARNING: Big Number!\n";
-        }
+        $this->setupHeader();
+        $this->n = $this->getIntegerInput("Enter the value for n: ", "n");
     }
 
     public function isReady(): bool
     {
-        if ($this->n === null) {
-            return false;
-        }
-
-        if (!is_int($this->n)) {
-            return false;
-        }
-
-        if ($this->n <= 0) {
-            return false;
-        }
-
-        return true;
+        return $this->isPositiveInteger($this->n);
     }
 
     public function reset(): void
@@ -83,10 +58,10 @@ class SumProblem implements ProblemInterface
      *
      * ```
      * Algo(n)
-     * s ← 0
-     * for i ← 1, ..., n
-     *   s ← s + i
-     * return s
+     *   s ← 0
+     *   for i ← 1, ..., n
+     *     s ← s + i
+     *   return s
      * ```
      *
      * @return void
@@ -94,35 +69,32 @@ class SumProblem implements ProblemInterface
      */
     public function iterativeSum(): void
     {
-        if (!$this->isReady()) {
-            echo "Problem not configured! Run Setup first.\n";
-            return;
-        }
+        $this->executeWithReadyCheck(function () {
+            if ($this->n > 10000000000) {
+                echo "⚠ WARNING: n too large for iterative solution!\n";
+                return;
+            }
 
-        if ($this->n > 10000000000) {
-            echo "⚠ WARNING: n too large for iterative solution!\n";
-            return;
-        }
+            echo "Start iterative calculation for n = " . number_format($this->n) . " ...\n";
 
-        echo "Start iterative calculation for n = " . number_format($this->n) . " ...\n";
+            $result = $this->measurePerformance(function () {
+                $sum = 0;
+                $counter = 0;
 
-        $timer = new PerformanceMeasurement();
-        $timer->start();
+                for ($i = 1; $i <= $this->n; $i++) {
+                    $sum += $i;
+                    $counter++;
+                }
 
-        $sum = 0;
-        $counter = 0;
+                return ['sum' => $sum, 'iterations' => $counter];
+            });
 
-        for ($i = 1; $i <= $this->n; $i++) {
-            $sum += $i;
-            $counter += 1;
-        }
-
-        $stats = $timer->stop();
-
-        echo "\n--- Results ---\n";
-        echo "Result: " . new CustomFormatter()->formatLargeNumber($sum) . "\n";
-        echo "Iterations: " . $counter . "\n";
-        echo "Time: " . $timer->formatDuration($stats['duration']) . "\n";
+            $this->printResults(
+              (string)$result['result']['sum'],
+              $result['result']['iterations'],
+              $result['duration']
+            );
+        });
     }
 
     /**
@@ -132,10 +104,10 @@ class SumProblem implements ProblemInterface
      *
      * ```
      * Algo(n)
-     *     n × (n + 1)
-     * s ← ───────────
-     *         2
-     * returns s
+     *       n × (n + 1)
+     *   s ← ───────────
+     *           2
+     *   returns s
      * ```
      *
      * @return void
@@ -143,22 +115,18 @@ class SumProblem implements ProblemInterface
      */
     public function gaussianSumFormula(): void
     {
-        if (!$this->isReady()) {
-            echo "Problem not configured! Run Setup first.\n";
-            return;
-        }
+        $this->executeWithReadyCheck(function() {
+            echo "Start calculation for n = " . number_format($this->n) . "...\n";
 
-        echo "Start calculation for n = " . number_format((int)$this->n) . "...\n";
+            $result = $this->measurePerformance(function() {
+                return bcdiv(
+                  bcmul((string)$this->n, bcadd((string)$this->n, '1', 8), 8),
+                  '2',
+                  8
+                );
+            });
 
-        $timer = new PerformanceMeasurement();
-        $timer->start();
-
-        $sum = bcdiv(bcmul((string)$this->n, bcadd((string)$this->n, '1', 8), 8), '2', 8);
-
-        $stats = $timer->stop();
-
-        echo "\n--- Results ---\n";
-        echo "Result: " . new CustomFormatter()->formatLargeNumber($sum) . "\n";
-        echo "Time: " . $timer->formatDuration($stats['duration']) . "\n";
+            $this->printResults($result['result'], null, $result['duration']);
+        });
     }
 }

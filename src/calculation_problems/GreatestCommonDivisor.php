@@ -2,19 +2,9 @@
 
 namespace src\calculation_problems;
 
-use src\interfaces\ProblemInterface;
-
-use src\utilities\CustomFormatter;
-use src\utilities\PerformanceMeasurement;
-
-use function fgets;
 use function number_format;
-use function str_repeat;
-use function trim;
 
-use const STDIN;
-
-class GreatestCommonDivisor implements ProblemInterface
+class GreatestCommonDivisor extends AbstractCalculationProblem
 {
     /**
      * @var int|null
@@ -36,9 +26,7 @@ class GreatestCommonDivisor implements ProblemInterface
         if ($this->n === null || $this->m === null) {
             return 'Find the greatest common divisor of n and m (n, m not set yet)';
         }
-
-
-        return 'Find the greatest common divisor of n: ' . number_format($this->n) . 'and m: ' . number_format($this->m);
+        return 'Find the greatest common divisor of n: ' . number_format($this->n) . ' and m: ' . number_format($this->m);
     }
 
     public function getAvailableMethods(): array
@@ -50,44 +38,14 @@ class GreatestCommonDivisor implements ProblemInterface
 
     public function setupParameters(): void
     {
-        echo "\n" . str_repeat('=', 50) . "\n";
-        echo 'SETUP: ' . $this->getProblemName() . "\n";
-        echo str_repeat('=', 50) . "\n";
-
-        echo 'Enter the value for n: ';
-        $input = trim(fgets(STDIN));
-        $n = (int)$input;
-
-        $this->n = $n;
-
-        echo 'Enter the value for m: ';
-        $input = trim(fgets(STDIN));
-        $m = (int)$input;
-
-        $this->m = $m;
-        echo '✓ Parameters set: n = ' . number_format($this->n) . ' and m = ' . number_format($this->m) . "\n";
-
-        if ($this->n > 100000000 || $this->m > 100000000) {
-            echo "⚠ WARNING: Big Number!\n";
-        }
+        $this->setupHeader();
+        $this->n = $this->getIntegerInput('Enter the value for n: ', 'n');
+        $this->m = $this->getIntegerInput('Enter the value for m: ', 'm');
     }
 
     public function isReady(): bool
     {
-        if ($this->n === null) {
-            return false;
-        }
-
-        if (!is_int($this->n) || !is_int($this->m)) {
-            return false;
-        }
-
-
-        if ($this->n <= 0 || $this->m <= 0) {
-            return false;
-        }
-
-        return true;
+        return $this->isPositiveInteger($this->n) && $this->isPositiveInteger($this->m);
     }
 
     public function reset(): void
@@ -103,12 +61,12 @@ class GreatestCommonDivisor implements ProblemInterface
      *
      * ```
      * Algo(n, m)
-     * d ← 1
-     * for i ← min(n,m), ..., 1
-     *   if i divides n and i divides m
-     *     d ← i
-     *     break
-     * return d
+     *   d ← 1
+     *   for i ← min(n,m), ..., 1
+     *     if i divides n and i divides m
+     *       d ← i
+     *       break
+     *   return d
      * ```
      *
      * @return void
@@ -116,36 +74,31 @@ class GreatestCommonDivisor implements ProblemInterface
      */
     public function simpleCheck(): void
     {
-        if (!$this->isReady()) {
-            echo "Problem not configured! Run Setup first.\n";
-            return;
-        }
+        $this->executeWithReadyCheck(function () {
+            echo 'Start finding greatest common divisor with n = ' . number_format($this->n) . ' and m = ' . number_format($this->m) . " ...\n";
 
-        echo 'Start finding greatest common divisor with n = ' . number_format($this->n) . ' and m = ' . number_format($this->m) . " ...\n";
+            $result = $this->measurePerformance(function () {
+                $divisor = 1;
+                $counter = 0;
 
-        $timer = new PerformanceMeasurement();
-        $timer->start();
+                for ($i = min($this->n, $this->m); $i >= 1; $i--) {
+                    $counter++;
+                    if (bcmod((string)$this->n, (string)$i) === '0' &&
+                      bcmod((string)$this->m, (string)$i) === '0') {
+                        $divisor = $i;
+                        break;
+                    }
+                }
 
-        $divisor = 1;
-        $counter = 0;
+                return ['divisor' => $divisor, 'iterations' => $counter];
+            });
 
-        for ($i = min($this->n, $this->m); $i >= 1; $i--) {
-            $counter += 1;
-
-            if (bcmod((string)$this->n, (string)$i) === '0' && bcmod((string)$this->m, (string)$i) === '0') {
-                $divisor = $i;
-                break;
-            }
-        }
-
-        $stats = $timer->stop();
-
-        $customFormatter = new CustomFormatter();
-
-        echo "\n--- Results ---\n";
-        echo "Result: " . $customFormatter->formatLargeNumber($divisor) . "\n";
-        echo "Iterations: " . $customFormatter->formatLargeNumber($counter) . "\n";
-        echo "Time: " . $timer->formatDuration($stats['duration']) . "\n";
+            $this->printResults(
+              (string)$result['result']['divisor'],
+              $result['result']['iterations'],
+              $result['duration']
+            );
+        });
     }
 }
 
